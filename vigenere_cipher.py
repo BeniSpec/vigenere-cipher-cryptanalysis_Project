@@ -112,3 +112,15 @@ def recover_key(ciphertext: str, key_length: int) -> str:
     for i, ch in enumerate(letters_only):
         slices[i % key_length] += ch
     return "".join(recover_key_letter(s) for s in slices)
+
+
+def break_vigenere(ciphertext: str, max_key_len: int = 12) -> dict:
+    key_length, ic_scores = estimate_key_length(ciphertext, max_key_len)
+    recovered_key = recover_key(ciphertext, key_length)
+    recovered_plaintext = vigenere_decrypt(ciphertext, recovered_key)
+    return {
+        "ic_scores": ic_scores,
+        "estimated_key_length": key_length,
+        "recovered_key": recovered_key,
+        "recovered_plaintext": recovered_plaintext,
+    }
