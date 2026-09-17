@@ -124,3 +124,39 @@ def break_vigenere(ciphertext: str, max_key_len: int = 12) -> dict:
         "recovered_key": recovered_key,
         "recovered_plaintext": recovered_plaintext,
     }
+
+
+def get_valid_key(prompt: str = "Enter key: ") -> str:
+    while True:
+        raw = input(prompt)
+        if clean_key(raw):
+            return raw
+        print("Invalid key -- must contain at least one letter. Try again.")
+
+
+def main():
+    while True:
+        print("\n1) Encrypt  2) Decrypt  3) Break ciphertext (unknown key)  4) Exit")
+        choice = input("Choose an option: ").strip()
+        if choice == "1":
+            text = input("Enter plaintext: ")
+            key = get_valid_key()
+            print("Ciphertext:", vigenere_encrypt(text, key))
+        elif choice == "2":
+            text = input("Enter ciphertext: ")
+            key = get_valid_key()
+            print("Plaintext:", vigenere_decrypt(text, key))
+        elif choice == "3":
+            text = input("Enter ciphertext: ")
+            result = break_vigenere(text)
+            print(f"Estimated key length: {result['estimated_key_length']}")
+            print(f"Recovered key: {result['recovered_key']}")
+            print(f"Recovered plaintext: {result['recovered_plaintext']}")
+        elif choice == "4":
+            break
+        else:
+            print("Invalid option.")
+
+
+if __name__ == "__main__":
+    main()
