@@ -91,3 +91,16 @@ def chi_squared_score(shifted_counts: Counter, total: int) -> float:
         if expected > 0:
             score += (observed - expected) ** 2 / expected
     return score
+
+
+def recover_key_letter(slice_text: str) -> str:
+    best_shift, best_score = 0, float('inf')
+    for shift in range(26):
+        shifted = "".join(
+            chr((ord(ch) - ord('A') - shift) % 26 + ord('A'))
+            for ch in slice_text
+        )
+        score = chi_squared_score(Counter(shifted), len(slice_text))
+        if score < best_score:
+            best_score, best_shift = score, shift
+    return chr(best_shift + ord('A'))
