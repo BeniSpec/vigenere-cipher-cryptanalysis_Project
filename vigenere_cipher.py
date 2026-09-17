@@ -104,3 +104,11 @@ def recover_key_letter(slice_text: str) -> str:
         if score < best_score:
             best_score, best_shift = score, shift
     return chr(best_shift + ord('A'))
+
+
+def recover_key(ciphertext: str, key_length: int) -> str:
+    letters_only = "".join(ch for ch in ciphertext.upper() if ch.isalpha())
+    slices = ["" for _ in range(key_length)]
+    for i, ch in enumerate(letters_only):
+        slices[i % key_length] += ch
+    return "".join(recover_key_letter(s) for s in slices)
