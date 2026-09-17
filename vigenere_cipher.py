@@ -46,3 +46,12 @@ def vigenere_decrypt(ciphertext: str, key: str) -> str:
         else:
             result.append(char)
     return "".join(result)
+
+
+def index_of_coincidence(text: str) -> float:
+    freqs = Counter(text)
+    n = len(text)
+    if n < 2:
+        return 0.0
+    numerator = sum(f * (f - 1) for f in freqs.values())
+    return numerator / (n * (n - 1))
