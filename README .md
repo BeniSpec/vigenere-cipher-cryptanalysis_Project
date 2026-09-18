@@ -20,6 +20,7 @@ Full write-up, design diagrams, and measured results are in the final report.
 |---|---|
 | `vigenere_cipher.py` | Core implementation: encrypt, decrypt, IC-based key-length estimation, chi-squared key recovery, and the console menu. This is the file to run for the live demo. |
 | `vigenere_full_experiment.py` | Generates the measured evidence in the report — round-trip tests, IC-vs-key-length table, accuracy-vs-ciphertext-length experiment, performance benchmark, and the 4 charts (Figures 5–8). |
+| `vigenere_demo.html` | Browser version of the same encryption, decryption, and cryptanalysis logic, reimplemented in JavaScript for live demonstration. [Try it here](https://claude.ai/artifact/YT6ZXZU65crcABZtoCrBfz) — runs entirely in-browser, no data sent anywhere. |
 | `Vigenere_Cipher_Report.pdf` | Final submitted report. |
 | `evidence/` | Screenshots referenced in Appendix E of the report (console runs + CrypTool 2). |
 
@@ -40,6 +41,8 @@ To reproduce every measured result and chart in the report:
 ```bash
 python3 vigenere_full_experiment.py
 ```
+
+To try the browser version instead, open `vigenere_demo.html` in any browser, or use the [live hosted link](https://claude.ai/artifact/YT6ZXZU65crcABZtoCrBfz).
 
 ## Academic integrity note
 
