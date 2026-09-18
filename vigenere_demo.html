@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vigenère Cipher — Encrypt, Decrypt, Break</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #17212B;
+    --bg-2: #1F2C39;
+    --hero-text: #F3ECD9;
+    --hero-muted: #9FAEBD;
+    --panel-bg: #F3ECD9;
+    --panel-border: #DDD0AE;
+    --ink: #241C10;
+    --ink-muted: #6B5E45;
+    --brass: #B8863B;
+    --brass-deep: #8C6428;
+    --danger: #8B3A3A;
+    --success: #3F6B4A;
+    --mono-bg: #FBF6EA;
+    --mono-border: #D8C89E;
+    --shadow: 0 18px 40px rgba(10, 14, 20, 0.35);
+  }
+  :root:not([data-theme="light"]){
+    --bg: #17212B;
+    --bg-2: #1F2C39;
+    --hero-text: #F3ECD9;
+    --hero-muted: #9FAEBD;
+    --panel-bg: #F3ECD9;
+    --panel-border: #DDD0AE;
+    --ink: #241C10;
+    --ink-muted: #6B5E45;
+    --mono-bg: #FBF6EA;
+    --mono-border: #D8C89E;
+  }
+  :root[data-theme="light"]{
+    --bg: #FBF6EA;
+    --bg-2: #F2EAD3;
+    --hero-text: #241C10;
+    --hero-muted: #6B5E45;
+    --panel-bg: #FFFDF7;
+    --panel-border: #E3D6B0;
+    --ink: #241C10;
+    --ink-muted: #6B5E45;
+    --mono-bg: #F3ECD9;
+    --mono-border: #DDD0AE;
+    --shadow: 0 18px 40px rgba(120, 100, 60, 0.18);
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg: #FBF6EA;
+      --bg-2: #F2EAD3;
+      --hero-text: #241C10;
+      --hero-muted: #6B5E45;
+      --panel-bg: #FFFDF7;
+      --panel-border: #E3D6B0;
+      --mono-bg: #F3ECD9;
+      --mono-border: #DDD0AE;
+      --shadow: 0 18px 40px rgba(120, 100, 60, 0.18);
+    }
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 900px 500px at 15% -10%, var(--bg-2), transparent);
+    color: var(--hero-text);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    line-height: 1.55;
+    min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .wrap{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 72px 24px 96px;
+  }
+  h1, h2, h3{
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    margin: 0;
+  }
+  .hero h1{
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    color: var(--hero-text);
+  }
+  .hero p{
+    margin: 18px 0 0;
+    max-width: 46ch;
+    color: var(--hero-muted);
+    font-size: 1.05rem;
+  }
+
+  .panel{
+    margin-top: 48px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+  }
+  .tabs{
+    display: flex;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .tab{
+    flex: 1;
+    padding: 16px 12px;
+    text-align: center;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--ink-muted);
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--panel-border);
+    cursor: pointer;
+    position: relative;
+  }
+  .tab:last-child{ border-right: none; }
+  .tab[aria-selected="true"]{
+    color: var(--ink);
+  }
+  .tab[aria-selected="true"]::after{
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: var(--brass);
+  }
+  .tab:focus-visible{ outline: 2px solid var(--brass); outline-offset: -2px; }
+
+  .pane{ padding: 28px 28px 32px; display: none; }
+  .pane.active{ display: block; }
+
+  label{
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin: 0 0 6px;
+  }
+  .field{ margin-bottom: 18px; }
+  textarea, input[type="text"]{
+    width: 100%;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    font-size: 0.95rem;
+    padding: 12px 14px;
+    background: var(--mono-bg);
+    border: 1px solid var(--mono-border);
+    color: var(--ink);
+    resize: vertical;
+  }
+  textarea:focus, input[type="text"]:focus{
+    outline: 2px solid var(--brass);
+    outline-offset: 1px;
+  }
+  textarea{ min-height: 92px; }
+
+  .row{ display: flex; gap: 18px; flex-wrap: wrap; }
+  .row .field{ flex: 1; min-width: 180px; }
+
+  button.run{
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    background: var(--brass);
+    color: #221704;
+    border: none;
+    padding: 12px 22px;
+    cursor: pointer;
+  }
+  button.run:hover{ background: var(--brass-deep); }
+  button.run:focus-visible{ outline: 2px solid var(--ink); outline-offset: 2px; }
+  button.run:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+  .hint{ font-size: 0.82rem; color: var(--ink-muted); margin-top: 8px; }
+
+  .output{
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--mono-border);
+  }
+  .output-label{
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+  }
+  .output-value{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.98rem;
+    background: var(--mono-bg);
+    border: 1px solid var(--mono-border);
+    padding: 12px 14px;
+    word-break: break-word;
+    white-space: pre-wrap;
+    min-height: 1.2em;
+  }
+  .output-value.empty{ color: var(--ink-muted); font-family: 'IBM Plex Sans', sans-serif; font-style: italic; }
+  .output-value.error{ border-color: var(--danger); color: var(--danger); }
+  .output-value.ok{ border-color: var(--success); }
+
+  .stat-row{ display: flex; gap: 24px; margin: 18px 0 6px; flex-wrap: wrap; }
+  .stat{ min-width: 140px; }
+  .stat .n{ font-family: 'Fraunces', serif; font-size: 1.6rem; color: var(--ink); }
+  .stat .l{ font-size: 0.78rem; color: var(--ink-muted); }
+
+  .icchart{
+    margin-top: 18px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 110px;
+    padding: 0 2px;
+    border-bottom: 1px solid var(--mono-border);
+  }
+  .icbar{
+    flex: 1;
+    background: var(--mono-border);
+    position: relative;
+    min-height: 2px;
+    transition: height 0.4s ease;
+  }
+  .icbar.chosen{ background: var(--brass); }
+  .icbar .len{
+    position: absolute;
+    bottom: -20px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--ink-muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .icchart-wrap{ margin-bottom: 34px; }
+  .icchart-caption{ font-size: 0.78rem; color: var(--ink-muted); margin-top: 26px; }
+
+  .steps{
+    margin-top: 56px;
+  }
+  .steps h2{
+    font-size: 1.4rem;
+    color: var(--hero-text);
+  }
+  .step{
+    display: flex;
+    gap: 18px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(159, 174, 189, 0.25);
+  }
+  .step:first-of-type{ border-top: none; padding-top: 0; }
+  .step .num{
+    font-family: 'Fraunces', serif;
+    font-size: 1.3rem;
+    color: var(--brass);
+    min-width: 28px;
+  }
+  .step .body h3{
+    font-size: 1.02rem;
+    color: var(--hero-text);
+    margin-bottom: 4px;
+  }
+  .step .body p{
+    margin: 0;
+    color: var(--hero-muted);
+    font-size: 0.94rem;
+    max-width: 52ch;
+  }
+
+  footer{
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(159, 174, 189, 0.25);
+    font-size: 0.82rem;
+    color: var(--hero-muted);
+  }
+  footer code{ font-family: 'IBM Plex Mono', monospace; }
+
+  @media (prefers-reduced-motion: reduce){
+    .icbar{ transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>Every letter hides another.</h1>
+    <p>A working Vigenère cipher — encrypt a message, decrypt it back, or recover a hidden key from ciphertext alone using nothing but letter statistics.</p>
+  </div>
+
+  <div class="panel">
+    <div class="tabs" role="tablist" aria-label="Cipher mode">
+      <button class="tab" role="tab" aria-selected="true" aria-controls="pane-encrypt" id="tab-encrypt">Encrypt</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="pane-decrypt" id="tab-decrypt">Decrypt</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="pane-break" id="tab-break">Break a cipher</button>
+    </div>
+
+    <!-- ENCRYPT -->
+    <div class="pane active" id="pane-encrypt" role="tabpanel" aria-labelledby="tab-encrypt">
+      <div class="field">
+        <label for="enc-text">Message</label>
+        <textarea id="enc-text" placeholder="Attack at dawn"></textarea>
+      </div>
+      <div class="field">
+        <label for="enc-key">Key</label>
+        <input type="text" id="enc-key" placeholder="LEMON">
+      </div>
+      <button class="run" id="enc-run">Encrypt</button>
+      <div class="output">
+        <div class="output-label">Ciphertext</div>
+        <div class="output-value empty" id="enc-out">Nothing yet — enter a message and key above.</div>
+      </div>
+    </div>
+
+    <!-- DECRYPT -->
+    <div class="pane" id="pane-decrypt" role="tabpanel" aria-labelledby="tab-decrypt">
+      <div class="field">
+        <label for="dec-text">Ciphertext</label>
+        <textarea id="dec-text" placeholder="LXFOPVEFRNHR"></textarea>
+      </div>
+      <div class="field">
+        <label for="dec-key">Key</label>
+        <input type="text" id="dec-key" placeholder="LEMON">
+      </div>
+      <button class="run" id="dec-run">Decrypt</button>
+      <div class="output">
+        <div class="output-label">Message</div>
+        <div class="output-value empty" id="dec-out">Nothing yet — enter ciphertext and a key above.</div>
+      </div>
+    </div>
+
+    <!-- BREAK -->
+    <div class="pane" id="pane-break" role="tabpanel" aria-labelledby="tab-break">
+      <div class="field">
+        <label for="brk-text">Ciphertext (key unknown)</label>
+        <textarea id="brk-text" style="min-height:120px" placeholder="Paste 200+ letters of ciphertext — the more, the more reliable the recovery."></textarea>
+      </div>
+      <button class="run" id="brk-run">Recover the key</button>
+      <div class="hint">Works best on 200+ letters. Very short ciphertext doesn't carry enough statistical signal — the report's own testing found this exact limit.</div>
+
+      <div class="output" id="brk-output" style="display:none;">
+        <div class="stat-row">
+          <div class="stat">
+            <div class="n" id="brk-len">—</div>
+            <div class="l">Estimated key length</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="brk-key">—</div>
+            <div class="l">Recovered key</div>
+          </div>
+        </div>
+
+        <div class="icchart-wrap">
+          <div class="icchart" id="brk-chart"></div>
+          <div class="icchart-caption">Index of Coincidence by candidate key length — the tallest bar past the English threshold (0.058) wins.</div>
+        </div>
+
+        <div class="output-label">Recovered plaintext</div>
+        <div class="output-value" id="brk-plain"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <h2>How the key gets found</h2>
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <h3>Estimate the key length</h3>
+        <p>The ciphertext is split into equal interleaved slices, one per candidate length from 1 to 12. English text repeats letters more often than random text, so the slice length where that repetition reappears — measured by the Index of Coincidence — points to the real key length.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <h3>Recover each letter</h3>
+        <p>Each slice was shifted by one letter of the key, consistently. Trying all 26 possible shifts and scoring the result against standard English letter frequencies (chi-squared) reveals which shift — and so which key letter — fits best.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <h3>Put it back together</h3>
+        <p>The recovered letters are assembled into a key, and that key decrypts the full ciphertext — no brute force, no dictionary, just public knowledge of how English text behaves.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Runs the same <code>vigenere_cipher.py</code> logic (encryption, Index of Coincidence, chi-squared key recovery) used in the CCS2243 project report. Nothing typed here is sent anywhere — it all runs in your browser.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Core cipher logic (ported 1:1 from vigenere_cipher.py) ----
+
+  function cleanKey(key){
+    return (key || "").split("").filter(function(ch){ return /[a-zA-Z]/.test(ch); }).join("").toUpperCase();
+  }
+
+  function vigenereEncrypt(plaintext, key){
+    var k = cleanKey(key);
+    if (!k) throw new Error("Key must contain at least one letter.");
+    var result = [], keyIndex = 0, keyLen = k.length;
+    for (var i = 0; i < plaintext.length; i++){
+      var ch = plaintext[i];
+      if (/[a-zA-Z]/.test(ch)){
+        var isUpper = ch === ch.toUpperCase();
+        var p = ch.toUpperCase().charCodeAt(0) - 65;
+        var kk = k.charCodeAt(keyIndex % keyLen) - 65;
+        var c = (p + kk) % 26;
+        var outCh = String.fromCharCode(c + 65);
+        result.push(isUpper ? outCh : outCh.toLowerCase());
+        keyIndex++;
+      } else {
+        result.push(ch);
+      }
+    }
+    return result.join("");
+  }
+
+  function vigenereDecrypt(ciphertext, key){
+    var k = cleanKey(key);
+    if (!k) throw new Error("Key must contain at least one letter.");
+    var result = [], keyIndex = 0, keyLen = k.length;
+    for (var i = 0; i < ciphertext.length; i++){
+      var ch = ciphertext[i];
+      if (/[a-zA-Z]/.test(ch)){
+        var isUpper = ch === ch.toUpperCase();
+        var c = ch.toUpperCase().charCodeAt(0) - 65;
+        var kk = k.charCodeAt(keyIndex % keyLen) - 65;
+        var p = ((c - kk) % 26 + 26) % 26;
+        var outCh = String.fromCharCode(p + 65);
+        result.push(isUpper ? outCh : outCh.toLowerCase());
+        keyIndex++;
+      } else {
+        result.push(ch);
+      }
+    }
+    return result.join("");
+  }
+
+  function indexOfCoincidence(text){
+    var freqs = {};
+    for (var i = 0; i < text.length; i++){
+      freqs[text[i]] = (freqs[text[i]] || 0) + 1;
+    }
+    var n = text.length;
+    if (n < 2) return 0.0;
+    var numerator = 0;
+    for (var letter in freqs){
+      var f = freqs[letter];
+      numerator += f * (f - 1);
+    }
+    return numerator / (n * (n - 1));
+  }
+
+  function estimateKeyLength(ciphertext, maxLen){
+    maxLen = maxLen || 12;
+    var lettersOnly = ciphertext.toUpperCase().split("").filter(function(ch){ return /[A-Z]/.test(ch); }).join("");
+    var scores = {};
+    for (var candidateLen = 1; candidateLen <= maxLen; candidateLen++){
+      var slices = [];
+      for (var s = 0; s < candidateLen; s++) slices.push("");
+      for (var i = 0; i < lettersOnly.length; i++){
+        slices[i % candidateLen] += lettersOnly[i];
+      }
+      var sum = 0;
+      for (var j = 0; j < slices.length; j++) sum += indexOfCoincidence(slices[j]);
+      scores[candidateLen] = sum / candidateLen;
+    }
+    var threshold = 0.058;
+    var above = [];
+    for (var len in scores){ if (scores[len] >= threshold) above.push(parseInt(len, 10)); }
+    var bestLen;
+    if (above.length > 0){
+      bestLen = Math.min.apply(null, above);
+    } else {
+      bestLen = 1;
+      var bestScore = -1;
+      for (var len2 in scores){ if (scores[len2] > bestScore){ bestScore = scores[len2]; bestLen = parseInt(len2, 10); } }
+    }
+    return { bestLen: bestLen, scores: scores };
+  }
+
+  var ENGLISH_FREQ = {
+    A: 8.17, B: 1.49, C: 2.78, D: 4.25, E: 12.70, F: 2.23,
+    G: 2.02, H: 6.09, I: 6.97, J: 0.15, K: 0.77, L: 4.03,
+    M: 2.41, N: 6.75, O: 7.51, P: 1.93, Q: 0.10, R: 5.99,
+    S: 6.33, T: 9.06, U: 2.76, V: 0.98, W: 2.36, X: 0.15,
+    Y: 1.97, Z: 0.07
+  };
+
+  function chiSquaredScore(shiftedCounts, total){
+    var score = 0.0;
+    for (var letter in ENGLISH_FREQ){
+      var expected = ENGLISH_FREQ[letter] / 100.0 * total;
+      var observed = shiftedCounts[letter] || 0;
+      if (expected > 0){
+        score += Math.pow(observed - expected, 2) / expected;
+      }
+    }
+    return score;
+  }
+
+  function recoverKeyLetter(sliceText){
+    var bestShift = 0, bestScore = Infinity;
+    for (var shift = 0; shift < 26; shift++){
+      var counts = {};
+      for (var i = 0; i < sliceText.length; i++){
+        var code = ((sliceText.charCodeAt(i) - 65 - shift) % 26 + 26) % 26;
+        var ch = String.fromCharCode(code + 65);
+        counts[ch] = (counts[ch] || 0) + 1;
+      }
+      var score = chiSquaredScore(counts, sliceText.length);
+      if (score < bestScore){ bestScore = score; bestShift = shift; }
+    }
+    return String.fromCharCode(bestShift + 65);
+  }
+
+  function recoverKey(ciphertext, keyLength){
+    var lettersOnly = ciphertext.toUpperCase().split("").filter(function(ch){ return /[A-Z]/.test(ch); }).join("");
+    var slices = [];
+    for (var s = 0; s < keyLength; s++) slices.push("");
+    for (var i = 0; i < lettersOnly.length; i++){
+      slices[i % keyLength] += lettersOnly[i];
+    }
+    return slices.map(recoverKeyLetter).join("");
+  }
+
+  function breakVigenere(ciphertext, maxKeyLen){
+    maxKeyLen = maxKeyLen || 12;
+    var est = estimateKeyLength(ciphertext, maxKeyLen);
+    var key = recoverKey(ciphertext, est.bestLen);
+    var plaintext = vigenereDecrypt(ciphertext, key);
+    return { icScores: est.scores, keyLength: est.bestLen, key: key, plaintext: plaintext };
+  }
+
+  // ---- UI wiring ----
+
+  var tabs = [document.getElementById("tab-encrypt"), document.getElementById("tab-decrypt"), document.getElementById("tab-break")];
+  var panes = [document.getElementById("pane-encrypt"), document.getElementById("pane-decrypt"), document.getElementById("pane-break")];
+
+  tabs.forEach(function(tab, idx){
+    tab.addEventListener("click", function(){
+      tabs.forEach(function(t, i){
+        t.setAttribute("aria-selected", i === idx ? "true" : "false");
+        panes[i].classList.toggle("active", i === idx);
+      });
+    });
+  });
+
+  function setOutput(el, text, state){
+    el.textContent = text;
+    el.classList.remove("empty", "error", "ok");
+    if (state) el.classList.add(state);
+  }
+
+  document.getElementById("enc-run").addEventListener("click", function(){
+    var text = document.getElementById("enc-text").value;
+    var key = document.getElementById("enc-key").value;
+    var out = document.getElementById("enc-out");
+    try {
+      if (!text.trim()) throw new Error("Enter a message first.");
+      var result = vigenereEncrypt(text, key);
+      setOutput(out, result, "ok");
+    } catch (e){
+      setOutput(out, e.message, "error");
+    }
+  });
+
+  document.getElementById("dec-run").addEventListener("click", function(){
+    var text = document.getElementById("dec-text").value;
+    var key = document.getElementById("dec-key").value;
+    var out = document.getElementById("dec-out");
+    try {
+      if (!text.trim()) throw new Error("Enter ciphertext first.");
+      var result = vigenereDecrypt(text, key);
+      setOutput(out, result, "ok");
+    } catch (e){
+      setOutput(out, e.message, "error");
+    }
+  });
+
+  document.getElementById("brk-run").addEventListener("click", function(){
+    var text = document.getElementById("brk-text").value;
+    var outputBox = document.getElementById("brk-output");
+    var lettersOnly = text.toUpperCase().split("").filter(function(ch){ return /[A-Z]/.test(ch); }).join("");
+
+    if (lettersOnly.length < 40){
+      outputBox.style.display = "block";
+      document.getElementById("brk-len").textContent = "—";
+      document.getElementById("brk-key").textContent = "—";
+      document.getElementById("brk-chart").innerHTML = "";
+      setOutput(document.getElementById("brk-plain"), "Not enough letters to analyse (" + lettersOnly.length + " found). Paste at least 200+ letters of ciphertext for a reliable result.", "error");
+      return;
+    }
+
+    var result = breakVigenere(text, 12);
+    outputBox.style.display = "block";
+    document.getElementById("brk-len").textContent = result.keyLength;
+    document.getElementById("brk-key").textContent = result.key;
+    setOutput(document.getElementById("brk-plain"), result.plaintext, "ok");
+
+    var chart = document.getElementById("brk-chart");
+    chart.innerHTML = "";
+    var maxScore = 0;
+    for (var len in result.icScores){ if (result.icScores[len] > maxScore) maxScore = result.icScores[len]; }
+    for (var len2 = 1; len2 <= 12; len2++){
+      var bar = document.createElement("div");
+      bar.className = "icbar" + (len2 === result.keyLength ? " chosen" : "");
+      var h = maxScore > 0 ? Math.max(2, (result.icScores[len2] / maxScore) * 90) : 2;
+      bar.style.height = h + "px";
+      var label = document.createElement("div");
+      label.className = "len";
+      label.textContent = len2;
+      bar.appendChild(label);
+      chart.appendChild(bar);
+    }
+  });
+})();
+</script>
+</body>
+</html>
