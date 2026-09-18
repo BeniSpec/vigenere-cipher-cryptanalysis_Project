@@ -3,11 +3,7 @@
 # CCS2243 Cryptography Essential - Individual Project
 # Benat Siraj Ahmed | AIU24102456
 #
-# Run this top to bottom (Runtime > Run all in Colab, or Run All in Jupyter).
-# It regenerates every number, table, and chart used in the report --
-# nothing in the report was invented; this script IS the source of truth.
-# No installs needed: only uses matplotlib, which Colab/Jupyter ship with.
-# ============================================================================
+
 
 import time
 import random
