@@ -7,6 +7,7 @@ Albukhary International University, Sem 3 2025-2026
 
 Author: Benat Siraj Ahmed
 Student ID: AIU24102456
+Group: BCS2B
 """
 
 from collections import Counter
